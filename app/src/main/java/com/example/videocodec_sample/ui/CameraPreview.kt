@@ -2,26 +2,19 @@ package com.example.videocodec_sample.ui
 
 import android.annotation.SuppressLint
 import android.content.ContentValues
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.SurfaceTexture
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
+import com.example.videocodec_sample.ui.utils.CustomSurfaceView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +35,7 @@ class CameraPreview : AppCompatActivity() {
         ProcessCameraProvider.getInstance(baseContext)
     }
 
+    var camera: Camera? = null
     private val cameraProvider by lazy {
         cameraProviderFuture.get()
     }
@@ -55,6 +49,8 @@ class CameraPreview : AppCompatActivity() {
                 setAnalyzer(ContextCompat.getMainExecutor(baseContext), CustomImageAnalyzer())
             }
     }
+
+    private var customSurfaceView: CustomSurfaceView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,22 +69,67 @@ class CameraPreview : AppCompatActivity() {
         })
     }
 
+    override fun onPause() {
+        super.onPause()
+        customSurfaceView?.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        customSurfaceView?.onResume()
+    }
+
+    private fun removeCameraStateObservers(cameraInfo: CameraInfo) {
+        cameraInfo.cameraState.removeObservers(this)
+    }
+
+    private fun cameraStateObserve(cameraInfo: CameraInfo) {
+        cameraInfo.cameraState.observe(this, androidx.lifecycle.Observer { state ->
+            when (state.type) {
+                CameraState.Type.PENDING_OPEN -> Toast.makeText(
+                    baseContext, "CameraState: PENDING_OPEN", Toast.LENGTH_SHORT
+                ).show()
+                CameraState.Type.OPENING -> Toast.makeText(
+                    baseContext, "CameraState: OPENING", Toast.LENGTH_SHORT
+                ).show()
+                CameraState.Type.OPEN -> Toast.makeText(
+                    baseContext, "CameraState: OPEN", Toast.LENGTH_SHORT
+                ).show()
+                CameraState.Type.CLOSING -> Toast.makeText(
+                    baseContext, "CameraState: CLOSING", Toast.LENGTH_SHORT
+                ).show()
+                CameraState.Type.CLOSED -> Toast.makeText(
+                    baseContext, "CameraState: CLOSED", Toast.LENGTH_SHORT
+                ).show()
+                else -> {
+                    throw RuntimeException("not in allow state")
+                }
+            }
+        })
+    }
+
     private fun startCamera() {
-
         cameraProviderFuture.addListener(Runnable {
-            val preview = Preview.Builder().build().apply {
-//                setSurfaceProvider(fuck.root)
-            }
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector.value!!, preview, imageCapture, imageAnalysis
-                )
-            } catch (exc: Exception) {
-                Log.e(TAG, "startCamera: ", exc)
-            }
+            bindCameraUseCase()
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    // bind usecase
+    private fun bindCameraUseCase() {
+        val preview = Preview.Builder().build().apply {
+            customSurfaceView = binding.preview.root as CustomSurfaceView
+            setSurfaceProvider(customSurfaceView?.cameraRender)
+        }
+        try {
+            cameraProvider.unbindAll()
+            if (camera != null) removeCameraStateObservers(camera!!.cameraInfo)
+            camera = cameraProvider.bindToLifecycle(
+                this, cameraSelector.value!!, preview, imageCapture, imageAnalysis
+            )
+            cameraStateObserve(cameraInfo = camera?.cameraInfo!!)
+        } catch (exc: Exception) {
+            Log.e(TAG, "startCamera: ", exc)
+        }
     }
 
     // takePicture btn
@@ -136,7 +177,7 @@ class CameraPreview : AppCompatActivity() {
                 } else {
                     cameraSelector.value = CameraSelector.DEFAULT_BACK_CAMERA
                 }
-                startCamera()
+                bindCameraUseCase()
             }
             R.id.recordSwitch -> {
 

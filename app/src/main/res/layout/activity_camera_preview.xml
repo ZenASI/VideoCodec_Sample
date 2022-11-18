@@ -9,7 +9,7 @@
 
         <include
             android:id="@+id/preview"
-            layout="@layout/item_custom_glsurface"
+            layout="@layout/custom_glsurface"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
