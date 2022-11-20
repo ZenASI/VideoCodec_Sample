@@ -52,11 +52,8 @@ class CustomSurfaceView : GLSurfaceView, GLSurfaceView.Renderer {
         cameraRender?.onDrawFrame(gl)
     }
 
-    fun setFilter(filterItem: FilterItem) {
-        queueEvent(Runnable {
-            // TODO: 待優畫 
-            val a = buildProgram(context, R.raw.camera_vertex, filterItem.filterId)
-            cameraRender?.mainProgram = a
-        })
-    }
+    fun setFilter(filterItem: FilterItem) =
+        queueEvent {
+            cameraRender?.updateGLProgram(filterItem.filterId)
+        }
 }

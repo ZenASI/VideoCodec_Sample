@@ -58,7 +58,7 @@ class CameraPreview : AppCompatActivity() {
 
     private var customSurfaceView: CustomSurfaceView? = null
 
-    private val filterAdapter:FilterAdapter by lazy {
+    private val filterAdapter: FilterAdapter by lazy {
         FilterAdapter(FilterUtils.getAllFilter())
     }
 
@@ -139,9 +139,10 @@ class CameraPreview : AppCompatActivity() {
         if (customSurfaceView != null) binding.container.removeView(customSurfaceView)
         customSurfaceView = CustomSurfaceView(baseContext)
         binding.container.addView(customSurfaceView)
-        val preview = Preview.Builder().build().also {
-            customSurfaceView?.setPreview(it)
-        }
+        val preview = Preview.Builder()
+            .build().also {
+                customSurfaceView?.setPreview(it)
+            }
 
         try {
             cameraProvider.unbindAll()

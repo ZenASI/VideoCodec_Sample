@@ -9,6 +9,7 @@ import android.opengl.GLES30.GL_TEXTURE_2D
 import android.opengl.GLES31
 import android.util.Log
 import android.view.Surface
+import androidx.annotation.RawRes
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.core.content.ContextCompat
@@ -16,6 +17,7 @@ import com.example.videocodec_sample.R
 import com.example.videocodec_sample.model.FilterItem
 import com.example.videocodec_sample.utils.BufferUtils
 import com.example.videocodec_sample.utils.ShaderUtils
+import java.nio.FloatBuffer
 import java.util.concurrent.Executors
 import javax.microedition.khronos.opengles.GL10
 
@@ -44,13 +46,18 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     )
 
     private val TAG = this::class.java.simpleName
-    public var mainProgram = 0
+    private var mainProgram = 0
     private var surfaceTexture: SurfaceTexture? = null
     private var tex: IntArray = IntArray(1)
     private val matrix = FloatArray(16)
     private val executor by lazy {
         Executors.newSingleThreadExecutor()
     }
+
+    // def filter
+    private var currentFilter = R.raw.original
+    private var width:Int = 0
+    private var height:Int = 0
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
         val size = request.resolution
@@ -110,7 +117,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         surfaceTexture?.setOnFrameAvailableListener(this)
 
 
-        mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, R.raw.original)
+        mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, currentFilter)
 
         ContextCompat.getMainExecutor(context).execute {
             preview?.setSurfaceProvider(this)
@@ -118,6 +125,8 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     }
 
     fun onChange(gl: GL10?, width: Int, height: Int) {
+        this.width = width
+        this.height = height
         GLES30.glViewport(0, 0, width, height)
     }
 
@@ -163,11 +172,34 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
             textureCoordinatesBuffer
         )
 
+        checkExtFilter()
+
         val textureMatrixId = GLES30.glGetUniformLocation(mainProgram, "vMatrix");
         GLES31.glUniformMatrix4fv(textureMatrixId, 1, false, matrix, 0)
 
         GLES31.glBindTexture(GL_TEXTURE_2D, tex[0])
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
         GLES31.glFlush()
+    }
+
+    private fun checkExtFilter() {
+        when (currentFilter) {
+            R.raw.pixelize -> {
+                val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
+                GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(width.toFloat(), height.toFloat()))
+            }
+            R.raw.triangles_mosaic->{
+                val blockSize = GLES31.glGetUniformLocation(mainProgram, "tileNum")
+                GLES31.glUniform2fv(blockSize, 1, FloatBuffer.wrap(floatArrayOf(50f, 100f, 1.0f)))
+            }
+            else -> {
+
+            }
+        }
+    }
+
+    fun updateGLProgram(filterId: Int) {
+        currentFilter = filterId
+        mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, filterId)
     }
 }
