@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:tools="http://schemas.android.com/tools">
     <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/filterRoot"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:paddingHorizontal="5dp">
+        android:paddingHorizontal="5dp"
+        android:background="#80cccccc">
 
         <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/filterThumb"
             android:layout_width="80dp"
             android:layout_height="100dp"
             android:scaleType="fitCenter"
@@ -15,8 +18,11 @@
             tools:src="@drawable/ic_flip_camera"/>
 
         <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/filterName"
             android:layout_width="wrap_content"
             android:layout_height="20dp"
+            android:gravity="center"
+            android:textColor="@color/white"
             tools:text="filter"/>
 
     </androidx.appcompat.widget.LinearLayoutCompat>

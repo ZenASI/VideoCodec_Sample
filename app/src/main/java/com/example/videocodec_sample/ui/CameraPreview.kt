@@ -1,5 +1,6 @@
 package com.example.videocodec_sample.ui
 
+import android.animation.LayoutTransition
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import androidx.appcompat.app.AppCompatActivity
@@ -7,14 +8,19 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import android.widget.Filter
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView.LayoutManager
 import com.example.videocodec_sample.R
+import com.example.videocodec_sample.adapter.FilterAdapter
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
-import com.example.videocodec_sample.ui.utils.CustomSurfaceView
+import com.example.videocodec_sample.ui.component.CustomSurfaceView
+import com.example.videocodec_sample.utils.FilterUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,7 +36,7 @@ class CameraPreview : AppCompatActivity() {
 
     private val isDoProcess = MutableLiveData(false)
 
-    private val cameraSelector = MutableLiveData(CameraSelector.DEFAULT_FRONT_CAMERA)
+    private val cameraSelector = MutableLiveData(CameraSelector.DEFAULT_BACK_CAMERA)
     private val cameraProviderFuture by lazy {
         ProcessCameraProvider.getInstance(baseContext)
     }
@@ -52,21 +58,35 @@ class CameraPreview : AppCompatActivity() {
 
     private var customSurfaceView: CustomSurfaceView? = null
 
+    private val filterAdapter:FilterAdapter by lazy {
+        FilterAdapter(FilterUtils.getAllFilter())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+
         startCamera()
         initListener()
+        binding.cameraFilterRV.apply {
+            layoutManager = LinearLayoutManager(baseContext, LinearLayoutManager.HORIZONTAL, false)
+            adapter = filterAdapter
+            filterAdapter.notifyDataSetChanged()
+            filterAdapter.listener = {
+//                Toast.makeText(baseContext, it.toString(), Toast.LENGTH_SHORT).show()
+                customSurfaceView?.setFilter(FilterUtils.getAllFilter()[it])
+            }
+        }
     }
 
     private fun initListener() {
-        isDoProcess.observe(this, androidx.lifecycle.Observer {
+        isDoProcess.observe(this) {
             if (it) {
                 binding.progressBar.visibility = View.VISIBLE
             } else {
                 binding.progressBar.visibility = View.GONE
             }
-        })
+        }
     }
 
     override fun onPause() {
@@ -116,15 +136,18 @@ class CameraPreview : AppCompatActivity() {
 
     // bind usecase
     private fun bindCameraUseCase() {
-        val preview = Preview.Builder().build().apply {
-            customSurfaceView = binding.preview.root as CustomSurfaceView
-            setSurfaceProvider(customSurfaceView?.cameraRender)
+        if (customSurfaceView != null) binding.container.removeView(customSurfaceView)
+        customSurfaceView = CustomSurfaceView(baseContext)
+        binding.container.addView(customSurfaceView)
+        val preview = Preview.Builder().build().also {
+            customSurfaceView?.setPreview(it)
         }
+
         try {
             cameraProvider.unbindAll()
             if (camera != null) removeCameraStateObservers(camera!!.cameraInfo)
             camera = cameraProvider.bindToLifecycle(
-                this, cameraSelector.value!!, preview, imageCapture, imageAnalysis
+                this, cameraSelector.value!!, preview, imageCapture
             )
             cameraStateObserve(cameraInfo = camera?.cameraInfo!!)
         } catch (exc: Exception) {
@@ -169,7 +192,7 @@ class CameraPreview : AppCompatActivity() {
     fun onClick(view: View) {
         when (view.id) {
             R.id.takePicture -> {
-                takePicture()
+//                takePicture()
             }
             R.id.cameraSwitch -> {
                 if (cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
