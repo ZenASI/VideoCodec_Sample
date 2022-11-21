@@ -1,6 +1,7 @@
-precision highp float;
+#extension GL_OES_EGL_image_external : require
+precision mediump float;
 
-uniform sampler2D iChannel0;
+uniform samplerExternalOES iChannel0;
 
 // 30x60; 40x80; 50x100
 uniform vec2 tileNum;

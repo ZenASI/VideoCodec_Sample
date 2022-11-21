@@ -2,13 +2,10 @@ package com.example.videocodec_sample.ui.component
 
 import android.content.Context
 import android.opengl.GLSurfaceView
-import android.util.AttributeSet
+import android.util.Log
 import androidx.camera.core.Preview
-import com.example.videocodec_sample.R
 import com.example.videocodec_sample.camera.CameraRender
 import com.example.videocodec_sample.model.FilterItem
-import com.example.videocodec_sample.utils.ShaderUtils
-import com.example.videocodec_sample.utils.ShaderUtils.buildProgram
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -25,7 +22,7 @@ class CustomSurfaceView : GLSurfaceView, GLSurfaceView.Renderer {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         preserveEGLContextOnPause = true
-        setEGLContextClientVersion(2)
+        setEGLContextClientVersion(3)
         setRenderer(this)
         renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
     }

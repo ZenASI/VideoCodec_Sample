@@ -10,6 +10,10 @@ object FilterUtils {
         FilterItem(R.raw.black_white, "blackWhite", 1, false),
         FilterItem(R.raw.pixelize, "pixelize", 1, false),
         FilterItem(R.raw.mirror, "mirror", 1, false),
-        FilterItem(R.raw.triangles_mosaic, "triangles mosaic", 1, false)
+        FilterItem(R.raw.triangles_mosaic, "triangles mosaic", 1, false),
+        FilterItem(R.raw.triple, "triple", 1, false),
+        FilterItem(R.raw.money, "money", 1, false),
+        FilterItem(R.raw.ascii, "ascii", 1, false),
+        FilterItem(R.raw.cartoon, "cartoon", 1, false)
     )
 }

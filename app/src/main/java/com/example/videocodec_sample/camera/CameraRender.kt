@@ -1,5 +1,6 @@
 package com.example.videocodec_sample.camera
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
@@ -8,6 +9,7 @@ import android.opengl.GLES30.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES30.GL_TEXTURE_2D
 import android.opengl.GLES31
 import android.util.Log
+import android.util.Size
 import android.view.Surface
 import androidx.annotation.RawRes
 import androidx.camera.core.Preview
@@ -25,17 +27,17 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     SurfaceTexture.OnFrameAvailableListener {
 
     private val vertexBuffer = BufferUtils.createBuffer(
-        1.0f, -1.0f,        // Right-bottom
-        -1.0f, -1.0f,       // Left-bottom
-        1.0f, 1.0f,         // Right-top
-        -1.0f, 1.0f         // Left-top
+        -1.0f, -1.0f,
+        1.0f, -1.0f,
+        -1.0f, 1.0f,
+        1.0f, 1.0f
     )
 
     private val textureCoordinatesBuffer = BufferUtils.createBuffer(
-        1.0f, 0.0f,     // Left-bottom
-        0.0f, 0.0f,     // Right-bottom
-        1.0f, 1.0f,     // Left-top
-        0.0f, 1.0f      // Right-top
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        1.0f, 1.0f
     )
 
     private val rotatedTextureCoordinatesBuffer = BufferUtils.createBuffer(
@@ -56,14 +58,13 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     // def filter
     private var currentFilter = R.raw.original
-    private var width:Int = 0
-    private var height:Int = 0
+    private var width: Int = 0
+    private var height: Int = 0
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
         val size = request.resolution
         surfaceTexture?.setDefaultBufferSize(size.width, size.height)
         val surface = Surface(surfaceTexture)
-        Log.d(TAG, "onSurfaceRequested: call ${surfaceTexture == null}")
         request.provideSurface(surface, executor) {
 //            surfaceTexture?.release()
 //            surface.release()
@@ -89,6 +90,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         mainProgram = 0
     }
 
+    @SuppressLint("RestrictedApi")
     fun onCreate(gl: GL10?, preview: Preview?) {
         val arr = IntArray(1)
         GLES31.glGenTextures(1, arr, 0)
@@ -131,7 +133,6 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     }
 
     fun onDrawFrame(gk: GL10?) {
-        Log.d(TAG, "onDrawFrame: ")
         try {
             surfaceTexture?.updateTexImage()
             surfaceTexture?.getTransformMatrix(matrix)
@@ -184,11 +185,15 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     private fun checkExtFilter() {
         when (currentFilter) {
-            R.raw.pixelize -> {
+            R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon -> {
                 val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
-                GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(width.toFloat(), height.toFloat()))
+                GLES31.glUniform3fv(
+                    iResolutionHandle,
+                    1,
+                    BufferUtils.createBuffer(width.toFloat(), height.toFloat())
+                )
             }
-            R.raw.triangles_mosaic->{
+            R.raw.triangles_mosaic -> {
                 val blockSize = GLES31.glGetUniformLocation(mainProgram, "tileNum")
                 GLES31.glUniform2fv(blockSize, 1, FloatBuffer.wrap(floatArrayOf(50f, 100f, 1.0f)))
             }

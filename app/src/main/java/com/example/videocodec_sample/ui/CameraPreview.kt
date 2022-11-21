@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.util.Rational
+import android.util.Size
 import android.view.View
 import android.widget.Filter
 import android.widget.Toast
@@ -140,6 +142,7 @@ class CameraPreview : AppCompatActivity() {
         customSurfaceView = CustomSurfaceView(baseContext)
         binding.container.addView(customSurfaceView)
         val preview = Preview.Builder()
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
             .build().also {
                 customSurfaceView?.setPreview(it)
             }

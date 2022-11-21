@@ -1,7 +1,8 @@
+#extension GL_OES_EGL_image_external : require
 precision mediump float;
 
 uniform vec3 iResolution;
-uniform sampler2D iChannel0;
+uniform samplerExternalOES iChannel0;
 varying vec2 texCoord;
 
 #define S (iResolution.x / 6e1) // The cell size.
