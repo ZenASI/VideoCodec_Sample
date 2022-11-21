@@ -5,11 +5,10 @@ varying vec2 texCoord;
 uniform samplerExternalOES iChannel0;
 
 void main() {
-    vec2 flipCoord = vec2(1.0-texCoord.x, texCoord.y);
+    vec2 flipCoord = texCoord;
 
-    if (flipCoord.x >= 0.5){
-        gl_FragColor = texture2D(iChannel0, vec2(flipCoord.x - 0.5, flipCoord.y));
-    } else {
-        gl_FragColor = texture2D(iChannel0, vec2(0.5 - flipCoord.x, flipCoord.y));
+    if (flipCoord.y <= 0.5){
+        flipCoord.y = 1.0 - flipCoord.y;
     }
+    gl_FragColor = texture2D(iChannel0, fract(flipCoord));
 }

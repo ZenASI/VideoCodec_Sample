@@ -39,7 +39,7 @@ internal object ShaderUtils {
         val status = IntArray(1)
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, status, 0)
         if (status[0] == 0) {
-            Log.d("SHADER_ERROR", "buildShader: ${GLES20.glGetShaderInfoLog(shader)}")
+            Log.e("SHADER_ERROR", "buildShader: ${GLES20.glGetShaderInfoLog(shader)}")
             GLES20.glDeleteShader(shader)
             
             throw GLException(0, "Can't create shader (type is: $type)!")

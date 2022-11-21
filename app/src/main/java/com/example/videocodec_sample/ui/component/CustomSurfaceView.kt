@@ -1,8 +1,12 @@
 package com.example.videocodec_sample.ui.component
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.hardware.Camera
+import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.Log
+import android.util.Size
 import androidx.camera.core.Preview
 import com.example.videocodec_sample.camera.CameraRender
 import com.example.videocodec_sample.model.FilterItem
@@ -22,7 +26,7 @@ class CustomSurfaceView : GLSurfaceView, GLSurfaceView.Renderer {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         preserveEGLContextOnPause = true
-        setEGLContextClientVersion(3)
+        setEGLContextClientVersion(2)
         setRenderer(this)
         renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
     }
@@ -41,7 +45,12 @@ class CustomSurfaceView : GLSurfaceView, GLSurfaceView.Renderer {
         cameraRender?.onCreate(gl, preview)
     }
 
+    @SuppressLint("RestrictedApi")
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        val cameraSize = preview?.attachedSurfaceResolution ?: Size(0, 0)
+        Log.d(TAG, "onSurfaceChanged gl: ${width} ${height}")
+        Log.d(TAG, "onSurfaceChanged attch: ${cameraSize}")
+        Log.d(TAG, "onSurfaceChanged view: ${getWidth()} ${getHeight()}")
         cameraRender?.onChange(gl, width, height)
     }
 

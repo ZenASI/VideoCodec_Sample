@@ -9,14 +9,11 @@ import android.opengl.GLES30.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES30.GL_TEXTURE_2D
 import android.opengl.GLES31
 import android.util.Log
-import android.util.Size
 import android.view.Surface
-import androidx.annotation.RawRes
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.core.content.ContextCompat
 import com.example.videocodec_sample.R
-import com.example.videocodec_sample.model.FilterItem
 import com.example.videocodec_sample.utils.BufferUtils
 import com.example.videocodec_sample.utils.ShaderUtils
 import java.nio.FloatBuffer
@@ -38,6 +35,10 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         1.0f, 0.0f,
         0.0f, 1.0f,
         1.0f, 1.0f
+//        1.0f, 0.0f,
+//        1.0f, 1.0f,
+//        0.0f, 0.0f,
+//        0.0f, 1.0f
     )
 
     private val rotatedTextureCoordinatesBuffer = BufferUtils.createBuffer(
@@ -90,7 +91,6 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         mainProgram = 0
     }
 
-    @SuppressLint("RestrictedApi")
     fun onCreate(gl: GL10?, preview: Preview?) {
         val arr = IntArray(1)
         GLES31.glGenTextures(1, arr, 0)
@@ -115,9 +115,10 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
             GLES30.GL_TEXTURE_WRAP_T,
             GLES30.GL_CLAMP_TO_EDGE.toFloat()
         )
+        GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
+
         surfaceTexture = SurfaceTexture(tex[0])
         surfaceTexture?.setOnFrameAvailableListener(this)
-
 
         mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, currentFilter)
 
@@ -133,18 +134,16 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     }
 
     fun onDrawFrame(gk: GL10?) {
+        // Clear the color buffer
+        GLES31.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        // Use shaders for rendering texture from a camera
+        GLES31.glUseProgram(mainProgram)
         try {
             surfaceTexture?.updateTexImage()
             surfaceTexture?.getTransformMatrix(matrix)
         } catch (e: java.lang.Exception) {
             Log.e(TAG, "onDrawFrame: ${e}")
         }
-        // Clear the color buffer
-        GLES31.glClear(GL_COLOR_BUFFER_BIT)
-
-        // Use shaders for rendering texture from a camera
-        GLES31.glUseProgram(mainProgram)
-
         // Prepare to render texture from a camera
         val iChannel0Location = GLES31.glGetUniformLocation(mainProgram, "iChannel0")
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
@@ -153,14 +152,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
         val vPositionLocation = GLES31.glGetAttribLocation(mainProgram, "vPosition")
         GLES31.glEnableVertexAttribArray(vPositionLocation)
-        GLES31.glVertexAttribPointer(
-            vPositionLocation,
-            2,
-            GLES31.GL_FLOAT,
-            false,
-            4 * 2,
-            vertexBuffer
-        )
+        GLES31.glVertexAttribPointer(vPositionLocation, 2, GLES31.GL_FLOAT, false, 4 * 2, vertexBuffer)
 
         val vTexCoordLocation = GLES31.glGetAttribLocation(mainProgram, "vTexCoord")
         GLES31.glEnableVertexAttribArray(vTexCoordLocation)
@@ -173,25 +165,19 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
             textureCoordinatesBuffer
         )
 
-        checkExtFilter()
-
         val textureMatrixId = GLES30.glGetUniformLocation(mainProgram, "vMatrix");
         GLES31.glUniformMatrix4fv(textureMatrixId, 1, false, matrix, 0)
 
-        GLES31.glBindTexture(GL_TEXTURE_2D, tex[0])
-        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
-        GLES31.glFlush()
+        checkExtFilter()
+
+        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP , 0, 4)
     }
 
     private fun checkExtFilter() {
         when (currentFilter) {
             R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon -> {
                 val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
-                GLES31.glUniform3fv(
-                    iResolutionHandle,
-                    1,
-                    BufferUtils.createBuffer(width.toFloat(), height.toFloat())
-                )
+                GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(width.toFloat(), height.toFloat()))
             }
             R.raw.triangles_mosaic -> {
                 val blockSize = GLES31.glGetUniformLocation(mainProgram, "tileNum")

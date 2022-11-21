@@ -3,6 +3,7 @@ package com.example.videocodec_sample.ui
 import android.animation.LayoutTransition
 import android.annotation.SuppressLint
 import android.content.ContentValues
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
@@ -10,6 +11,9 @@ import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.View
+import android.view.Window
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.widget.Filter
 import android.widget.Toast
 import androidx.camera.core.*
@@ -99,6 +103,14 @@ class CameraPreview : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         customSurfaceView?.onResume()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.hide(WindowInsets.Type.statusBars())
+        } else {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+        }
     }
 
     private fun removeCameraStateObservers(cameraInfo: CameraInfo) {

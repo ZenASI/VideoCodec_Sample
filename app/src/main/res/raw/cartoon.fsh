@@ -10,5 +10,5 @@ void main() {
     float newR = abs(color.r + color.g * 2.0 - color.b) * color.r;
     float newG = abs(color.r + color.b * 2.0 - color.g) * color.r;
     float newB = abs(color.r + color.b * 2.0 - color.g) * color.g;
-    gl_FragColor = vec4(newR, newG, newB, 1.0f);
+    gl_FragColor = vec4(newR, newG, newB, 1.0);
  }
