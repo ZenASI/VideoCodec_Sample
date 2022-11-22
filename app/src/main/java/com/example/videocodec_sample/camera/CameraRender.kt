@@ -2,6 +2,7 @@ package com.example.videocodec_sample.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
@@ -9,6 +10,7 @@ import android.opengl.GLES30.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES30.GL_TEXTURE_2D
 import android.opengl.GLES31
 import android.util.Log
+import android.util.Size
 import android.view.Surface
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
@@ -19,6 +21,7 @@ import com.example.videocodec_sample.utils.ShaderUtils
 import java.nio.FloatBuffer
 import java.util.concurrent.Executors
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.roundToInt
 
 class CameraRender(val context: Context) : Preview.SurfaceProvider,
     SurfaceTexture.OnFrameAvailableListener {
@@ -64,6 +67,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
         val size = request.resolution
+        Log.d(TAG, "onSurfaceRequested: $size")
         surfaceTexture?.setDefaultBufferSize(size.width, size.height)
         val surface = Surface(surfaceTexture)
         request.provideSurface(surface, executor) {
@@ -91,6 +95,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         mainProgram = 0
     }
 
+    @SuppressLint("RestrictedApi")
     fun onCreate(gl: GL10?, preview: Preview?) {
         val arr = IntArray(1)
         GLES31.glGenTextures(1, arr, 0)
@@ -125,11 +130,14 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         ContextCompat.getMainExecutor(context).execute {
             preview?.setSurfaceProvider(this)
         }
+
+        Log.d(TAG, "onCreate: ${preview?.attachedSurfaceResolution}")
     }
 
     fun onChange(gl: GL10?, width: Int, height: Int) {
         this.width = width
         this.height = height
+        Log.d(TAG, "onChange: ${Size(width, height)}")
         GLES30.glViewport(0, 0, width, height)
     }
 
@@ -175,7 +183,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     private fun checkExtFilter() {
         when (currentFilter) {
-            R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon -> {
+            R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon, R.raw.newspaper -> {
                 val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
                 GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(width.toFloat(), height.toFloat()))
             }

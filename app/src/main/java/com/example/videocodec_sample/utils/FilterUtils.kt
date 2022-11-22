@@ -14,6 +14,8 @@ object FilterUtils {
         FilterItem(R.raw.triple, "triple", 1, false),
         FilterItem(R.raw.money, "money", 1, false),
         FilterItem(R.raw.ascii, "ascii", 1, false),
-        FilterItem(R.raw.cartoon, "cartoon", 1, false)
+        FilterItem(R.raw.cartoon, "cartoon", 1, false),
+        FilterItem(R.raw.reverse, "reverse", 1, false),
+        FilterItem(R.raw.newspaper, "newspaper", 1, false),
     )
 }

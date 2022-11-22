@@ -1,6 +1,5 @@
 package com.example.videocodec_sample.ui
 
-import android.animation.LayoutTransition
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.os.Build
@@ -11,6 +10,7 @@ import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowInsets
 import android.view.WindowManager
@@ -21,7 +21,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView.LayoutManager
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.adapter.FilterAdapter
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
@@ -42,7 +41,7 @@ class CameraPreview : AppCompatActivity() {
 
     private val isDoProcess = MutableLiveData(false)
 
-    private val cameraSelector = MutableLiveData(CameraSelector.DEFAULT_BACK_CAMERA)
+    private val cameraSelector = MutableLiveData(CameraSelector.DEFAULT_FRONT_CAMERA)
     private val cameraProviderFuture by lazy {
         ProcessCameraProvider.getInstance(baseContext)
     }
@@ -152,6 +151,7 @@ class CameraPreview : AppCompatActivity() {
     private fun bindCameraUseCase() {
         if (customSurfaceView != null) binding.container.removeView(customSurfaceView)
         customSurfaceView = CustomSurfaceView(baseContext)
+        customSurfaceView?.layoutParams = ViewGroup.LayoutParams(-1, -1)
         binding.container.addView(customSurfaceView)
         val preview = Preview.Builder()
             .setTargetAspectRatio(AspectRatio.RATIO_16_9)
@@ -208,7 +208,7 @@ class CameraPreview : AppCompatActivity() {
     fun onClick(view: View) {
         when (view.id) {
             R.id.takePicture -> {
-//                takePicture()
+                takePicture()
             }
             R.id.cameraSwitch -> {
                 if (cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
