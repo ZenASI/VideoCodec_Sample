@@ -10,7 +10,6 @@ import android.hardware.camera2.CameraManager
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import android.opengl.GLES31
-import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -25,7 +24,6 @@ import java.nio.FloatBuffer
 import java.util.concurrent.Executors
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 class CameraRender(val context: Context) : Preview.SurfaceProvider,
     SurfaceTexture.OnFrameAvailableListener {
@@ -47,7 +45,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     private val TAG = this::class.java.simpleName
     private var mainProgram = 0
     private var surfaceTexture: SurfaceTexture? = null
-    private var tex: IntArray = IntArray(1)
+    private var textureIds: IntArray = IntArray(1)
     private val matrix = FloatArray(16)
     private val executor by lazy {
         Executors.newSingleThreadExecutor()
@@ -60,7 +58,6 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
 //        val size = request.resolution
-//        surfaceTexture?.setDefaultBufferSize(width, height)
         val size = calculateOptimalOutputSize()
         Log.d(TAG, "onSurfaceRequested: $size")
         surfaceTexture?.setDefaultBufferSize(size.width, size.height)
@@ -85,15 +82,14 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         surfaceTexture?.setOnFrameAvailableListener(null)
         surfaceTexture?.release()
 
-        GLES30.glDeleteTextures(1, tex, 0)
+        GLES30.glDeleteTextures(1, textureIds, 0)
         mainProgram = 0
     }
 
     @SuppressLint("RestrictedApi")
     fun onCreate(gl: GL10?, preview: Preview?) {
-        val arr = IntArray(1)
-        GLES31.glGenTextures(1, arr, 0)
-        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, arr[0])
+        GLES31.glGenTextures(1, textureIds, 0)
+        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureIds[0])
         GLES31.glTexParameterf(
             GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
             GLES30.GL_TEXTURE_MIN_FILTER,
@@ -116,7 +112,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         )
         GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
 
-        surfaceTexture = SurfaceTexture(tex[0])
+        surfaceTexture = SurfaceTexture(textureIds[0])
         surfaceTexture?.setOnFrameAvailableListener(this)
 
         mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, currentFilter)
@@ -149,7 +145,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         // Prepare to render texture from a camera
         val iChannel0Location = GLES31.glGetUniformLocation(mainProgram, "iChannel0")
         GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
-        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, tex[0])
+        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureIds[0])
         GLES31.glUniform1i(iChannel0Location, 0)
 
         val vPositionLocation = GLES31.glGetAttribLocation(mainProgram, "vPosition")
