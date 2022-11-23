@@ -12,6 +12,16 @@
         tools:context=".ui.MainActivity">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/CameraPreviewXBasicBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:paddingVertical="10dp"
+            android:text="CameraXPreviewBasic"
+            android:textAllCaps="false"
+            android:onClick="onClick"/>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/CameraPreviewBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

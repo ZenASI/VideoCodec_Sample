@@ -17,5 +17,6 @@ object FilterUtils {
         FilterItem(R.raw.cartoon, "cartoon", 1, false),
         FilterItem(R.raw.reverse, "reverse", 1, false),
         FilterItem(R.raw.newspaper, "newspaper", 1, false),
+        FilterItem(R.raw.crosshatch, "crosshatch", 1, false),
     )
 }
