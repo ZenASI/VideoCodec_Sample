@@ -2,6 +2,7 @@ package com.example.videocodec_sample.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Point
 import android.graphics.SurfaceTexture
@@ -10,6 +11,7 @@ import android.hardware.camera2.CameraManager
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import android.opengl.GLES31
+import android.opengl.GLException
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -21,6 +23,7 @@ import com.example.videocodec_sample.R
 import com.example.videocodec_sample.utils.BufferUtils
 import com.example.videocodec_sample.utils.ShaderUtils
 import java.nio.FloatBuffer
+import java.nio.IntBuffer
 import java.util.concurrent.Executors
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
@@ -44,8 +47,9 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     private val TAG = this::class.java.simpleName
     private var mainProgram = 0
+    private var filterProgram = 0
     private var surfaceTexture: SurfaceTexture? = null
-    private var textureIds: IntArray = IntArray(1)
+    private var textureIds = IntArray(1)
     private val matrix = FloatArray(16)
     private val executor by lazy {
         Executors.newSingleThreadExecutor()
@@ -55,6 +59,8 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     private var currentFilter = R.raw.original
     private var viewWidth: Int = 0
     private var viewHeight: Int = 0
+
+    private var faceDetector: FaceDetector? = null
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
 //        val size = request.resolution
@@ -84,42 +90,24 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
         GLES30.glDeleteTextures(1, textureIds, 0)
         mainProgram = 0
+        filterProgram = 0
     }
 
     @SuppressLint("RestrictedApi")
     fun onCreate(gl: GL10?, preview: Preview?) {
-        GLES31.glGenTextures(1, textureIds, 0)
-        GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureIds[0])
-        GLES31.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES30.GL_TEXTURE_MIN_FILTER,
-            GLES30.GL_LINEAR.toFloat()
-        )
-        GLES31.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES30.GL_TEXTURE_MAG_FILTER,
-            GLES30.GL_LINEAR.toFloat()
-        )
-        GLES30.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES30.GL_TEXTURE_WRAP_S,
-            GLES30.GL_CLAMP_TO_EDGE.toFloat()
-        )
-        GLES30.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES30.GL_TEXTURE_WRAP_T,
-            GLES30.GL_CLAMP_TO_EDGE.toFloat()
-        )
-        GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
+        generateTextures()
 
         surfaceTexture = SurfaceTexture(textureIds[0])
         surfaceTexture?.setOnFrameAvailableListener(this)
 
-        mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, currentFilter)
+        mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, R.raw.original)
+        filterProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, R.raw.original)
 
         ContextCompat.getMainExecutor(context).execute {
             preview?.setSurfaceProvider(this)
         }
+
+        faceDetector = FaceDetector(context)
 
         Log.d(TAG, "onCreate: ${preview?.attachedSurfaceResolution}")
     }
@@ -176,13 +164,42 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         checkExtFilter()
 
         GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
+
+//        try {
+//            val bitmapBuffer = IntArray(viewWidth * viewHeight)
+//            val bitmapSource = IntArray(viewWidth * viewHeight)
+//            GLES31.glReadPixels(0, 0, viewWidth, viewHeight, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, intBuffer)
+//            var offset1: Int
+//            var offset2: Int
+//            for (i in 0 until viewHeight) {
+//                offset1 = i * viewWidth
+//                offset2 = (viewHeight - i - 1) * viewWidth
+//                for (j in 0 until viewWidth) {
+//                    val texturePixel = bitmapBuffer[offset1 + j]
+//                    val blue = (texturePixel shr 16) and 0xff
+//                    val red = (texturePixel shl 16) and 0x00ff0000
+//                    val pixel = (texturePixel and 0xff00ff00.toInt()) or red or blue
+//
+//                    bitmapSource[offset2 + j] = pixel
+//                }
+//            }
+//            Bitmap.createBitmap(bitmapSource, viewWidth, viewHeight, Bitmap.Config.ARGB_8888)
+//        } catch (ex: GLException) {
+//            ex.printStackTrace()
+//        }
+
+        GLES31.glFlush()
     }
 
     private fun checkExtFilter() {
         when (currentFilter) {
             R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon, R.raw.newspaper, R.raw.crosshatch, R.raw.polygonization -> {
                 val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
-                GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(viewHeight.toFloat(), viewWidth.toFloat()))
+                GLES31.glUniform3fv(
+                    iResolutionHandle,
+                    1,
+                    BufferUtils.createBuffer(viewHeight.toFloat(), viewWidth.toFloat())
+                )
             }
             R.raw.triangles_mosaic -> {
                 val blockSize = GLES31.glGetUniformLocation(mainProgram, "tileNum")
@@ -202,6 +219,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     fun updateGLProgram(filterId: Int) {
         currentFilter = filterId
         mainProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, filterId)
+//        filterProgram = ShaderUtils.buildProgram(context, R.raw.camera_vertex, filterId)
     }
 
     private fun calculateOptimalOutputSize(): Size {
@@ -257,5 +275,33 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         val realSize = Point()
         display.getRealSize(realSize)
         return Size(realSize.x, realSize.y)
+    }
+
+    private fun generateTextures() {
+        GLES31.glGenTextures(textureIds.size, textureIds, 0)
+        textureIds.forEachIndexed { index, value ->
+            GLES31.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureIds[index])
+            GLES31.glTexParameterf(
+                GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES30.GL_TEXTURE_MIN_FILTER,
+                GLES30.GL_LINEAR.toFloat()
+            )
+            GLES31.glTexParameterf(
+                GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES30.GL_TEXTURE_MAG_FILTER,
+                GLES30.GL_LINEAR.toFloat()
+            )
+            GLES30.glTexParameterf(
+                GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES30.GL_TEXTURE_WRAP_S,
+                GLES30.GL_CLAMP_TO_EDGE.toFloat()
+            )
+            GLES30.glTexParameterf(
+                GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES30.GL_TEXTURE_WRAP_T,
+                GLES30.GL_CLAMP_TO_EDGE.toFloat()
+            )
+            GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
+        }
     }
 }
