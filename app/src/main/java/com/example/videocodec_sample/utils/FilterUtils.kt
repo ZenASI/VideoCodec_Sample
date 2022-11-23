@@ -18,5 +18,7 @@ object FilterUtils {
         FilterItem(R.raw.reverse, "reverse", 1, false),
         FilterItem(R.raw.newspaper, "newspaper", 1, false),
         FilterItem(R.raw.crosshatch, "crosshatch", 1, false),
+        FilterItem(R.raw.basic_deform, "basic deform", 1, false),
+        FilterItem(R.raw.polygonization, "polygonization", 1, false),
     )
 }

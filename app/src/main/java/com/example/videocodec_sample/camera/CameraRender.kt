@@ -25,6 +25,7 @@ import java.nio.FloatBuffer
 import java.util.concurrent.Executors
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class CameraRender(val context: Context) : Preview.SurfaceProvider,
     SurfaceTexture.OnFrameAvailableListener {
@@ -85,7 +86,6 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         surfaceTexture?.release()
 
         GLES30.glDeleteTextures(1, tex, 0)
-
         mainProgram = 0
     }
 
@@ -154,7 +154,14 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
         val vPositionLocation = GLES31.glGetAttribLocation(mainProgram, "vPosition")
         GLES31.glEnableVertexAttribArray(vPositionLocation)
-        GLES31.glVertexAttribPointer(vPositionLocation, 2, GLES31.GL_FLOAT, false, 4 * 2, vertexBuffer)
+        GLES31.glVertexAttribPointer(
+            vPositionLocation,
+            2,
+            GLES31.GL_FLOAT,
+            false,
+            4 * 2,
+            vertexBuffer
+        )
 
         val vTexCoordLocation = GLES31.glGetAttribLocation(mainProgram, "vTexCoord")
         GLES31.glEnableVertexAttribArray(vTexCoordLocation)
@@ -172,18 +179,23 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
         checkExtFilter()
 
-        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP , 0, 4)
+        GLES31.glDrawArrays(GLES31.GL_TRIANGLE_STRIP, 0, 4)
     }
 
     private fun checkExtFilter() {
         when (currentFilter) {
-            R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon, R.raw.newspaper, R.raw.crosshatch -> {
+            R.raw.pixelize, R.raw.money, R.raw.ascii, R.raw.cartoon, R.raw.newspaper, R.raw.crosshatch, R.raw.polygonization -> {
                 val iResolutionHandle = GLES31.glGetUniformLocation(mainProgram, "iResolution")
                 GLES31.glUniform3fv(iResolutionHandle, 1, BufferUtils.createBuffer(viewHeight.toFloat(), viewWidth.toFloat()))
             }
             R.raw.triangles_mosaic -> {
                 val blockSize = GLES31.glGetUniformLocation(mainProgram, "tileNum")
                 GLES31.glUniform2fv(blockSize, 1, FloatBuffer.wrap(floatArrayOf(100f, 50f, 1.0f)))
+            }
+            R.raw.basic_deform -> {
+                val time = 45F
+                val iGlobalTimeLocation = GLES31.glGetUniformLocation(mainProgram, "iGlobalTime")
+                GLES31.glUniform1f(iGlobalTimeLocation, time)
             }
             else -> {
 
@@ -204,7 +216,8 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         cameraIds.forEach { cameraId ->
             val cameraCharacteristics = cameraService.getCameraCharacteristics(cameraId)
             if (cameraCharacteristics[CameraCharacteristics.LENS_FACING] == CameraCharacteristics.LENS_FACING_BACK) {
-                val configurationMap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                val configurationMap =
+                    cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
 
                 val outputSize = configurationMap!!.getOutputSizes(ImageFormat.JPEG).toList()
 
@@ -223,7 +236,8 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         val candidates = mutableListOf<Pair<Int, Size>>()
 
         sourceOutputSize.forEach { outputSize ->
-            val relativeScreenHeight = ((outputSize.height / realScreenSize.width.toFloat()) * realScreenSize.height).toInt()
+            val relativeScreenHeight =
+                ((outputSize.height / realScreenSize.width.toFloat()) * realScreenSize.height).toInt()
             candidates.add(Pair(abs(relativeScreenHeight - outputSize.width), outputSize))
         }
 
@@ -232,7 +246,7 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
             .map { it.second }
 
         resultCandidates.forEach {
-            if(it.width > realScreenSize.height) {
+            if (it.width > realScreenSize.height) {
                 return it
             }
         }
@@ -240,7 +254,8 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     }
 
     private fun calculateRealScreenSize(): Size {
-        val windowsService = context.applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val windowsService =
+            context.applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val display = windowsService.defaultDisplay
 
         val realSize = Point()
