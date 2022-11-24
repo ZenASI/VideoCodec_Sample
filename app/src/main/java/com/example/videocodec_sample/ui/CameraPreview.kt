@@ -10,13 +10,10 @@ import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.Surface
-import android.view.Surface.ROTATION_0
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.widget.Filter
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -25,6 +22,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.adapter.FilterAdapter
+import com.example.videocodec_sample.camera.CusImageAnalyzer
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
 import com.example.videocodec_sample.ui.component.CustomSurfaceView
 import com.example.videocodec_sample.utils.FilterUtils
@@ -54,12 +52,15 @@ class CameraPreview : AppCompatActivity() {
     }
 
     private val imageCapture by lazy {
-        ImageCapture.Builder().build()
+        ImageCapture.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build()
     }
+
     private val imageAnalysis by lazy {
-        ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        ImageAnalysis.Builder()
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build().apply {
-                setAnalyzer(ContextCompat.getMainExecutor(baseContext), CustomImageAnalyzer())
+                setAnalyzer(ContextCompat.getMainExecutor(baseContext), CusImageAnalyzer())
             }
     }
 
@@ -155,17 +156,25 @@ class CameraPreview : AppCompatActivity() {
         customSurfaceView = CustomSurfaceView(baseContext)
         customSurfaceView?.layoutParams = ViewGroup.LayoutParams(-1, -1)
         binding.container.addView(customSurfaceView)
-        val preview = Preview.Builder()
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .build().also {
-                customSurfaceView?.setPreview(it)
-            }
+        val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
+            customSurfaceView?.setPreview(it)
+        }
+        val aspectRatio = Rational(9, 16)
+        val viewPort =
+            ViewPort.Builder(aspectRatio, Surface.ROTATION_0).setScaleType(ViewPort.FILL_CENTER)
+                .build()
+        val useCaseGroup = UseCaseGroup.Builder()
+            .setViewPort(viewPort)
+            .addUseCase(preview)
+            .addUseCase(imageAnalysis)
+            .addUseCase(imageCapture)
+            .build()
 
         try {
             cameraProvider.unbindAll()
             if (camera != null) removeCameraStateObservers(camera!!.cameraInfo)
             camera = cameraProvider.bindToLifecycle(
-                this, cameraSelector.value!!, preview, imageCapture
+                this, cameraSelector.value!!, useCaseGroup
             )
             cameraStateObserve(cameraInfo = camera?.cameraInfo!!)
         } catch (exc: Exception) {
@@ -223,16 +232,6 @@ class CameraPreview : AppCompatActivity() {
             R.id.recordSwitch -> {
 
             }
-        }
-    }
-
-    inner class CustomImageAnalyzer : ImageAnalysis.Analyzer {
-        override fun analyze(image: ImageProxy) {
-            val buffer = image.planes[0].buffer
-            val data = ByteArray(buffer.remaining())
-            val pixels = data.map { it.toInt() and 0xFF }
-            val luma = pixels.average()
-            image.close()
         }
     }
 }
