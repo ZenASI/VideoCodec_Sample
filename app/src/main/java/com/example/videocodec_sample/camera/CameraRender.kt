@@ -2,7 +2,6 @@ package com.example.videocodec_sample.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Point
 import android.graphics.SurfaceTexture
@@ -10,7 +9,6 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.opengl.GLES11Ext
 import android.opengl.GLES31
-import android.opengl.GLException
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -57,8 +55,6 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
     private var currentFilter = R.raw.original
     private var viewWidth: Int = 0
     private var viewHeight: Int = 0
-
-    private var faceDetector: FaceDetector? = null
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
         val size = request.resolution

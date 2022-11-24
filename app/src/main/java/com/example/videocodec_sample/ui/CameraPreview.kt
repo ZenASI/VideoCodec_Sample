@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.util.Rational
-import android.util.Size
 import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
@@ -22,13 +21,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.adapter.FilterAdapter
-import com.example.videocodec_sample.camera.CusImageAnalyzer
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
 import com.example.videocodec_sample.ui.component.CustomSurfaceView
+import com.example.videocodec_sample.ui.component.FaceRectView
 import com.example.videocodec_sample.utils.FilterUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ *
+ * @see CameraPreview 控制 preview
+ */
 @SuppressLint("RestrictedApi")
 class CameraPreview : AppCompatActivity() {
 
@@ -59,12 +62,11 @@ class CameraPreview : AppCompatActivity() {
         ImageAnalysis.Builder()
             .setTargetAspectRatio(AspectRatio.RATIO_16_9)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build().apply {
-                setAnalyzer(ContextCompat.getMainExecutor(baseContext), CusImageAnalyzer())
-            }
+            .build()
     }
 
     private var customSurfaceView: CustomSurfaceView? = null
+    private var faceRectView: FaceRectView? = null
 
     private val filterAdapter: FilterAdapter by lazy {
         FilterAdapter(FilterUtils.getAllFilter())
@@ -107,6 +109,7 @@ class CameraPreview : AppCompatActivity() {
         customSurfaceView?.onResume()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.hide(WindowInsets.Type.statusBars())
+            window.insetsController?.hide(WindowInsets.Type.navigationBars())
         } else {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -120,7 +123,7 @@ class CameraPreview : AppCompatActivity() {
     }
 
     private fun cameraStateObserve(cameraInfo: CameraInfo) {
-        cameraInfo.cameraState.observe(this, androidx.lifecycle.Observer { state ->
+        cameraInfo.cameraState.observe(this) { state ->
             when (state.type) {
                 CameraState.Type.PENDING_OPEN -> Toast.makeText(
                     baseContext, "CameraState: PENDING_OPEN", Toast.LENGTH_SHORT
@@ -141,11 +144,11 @@ class CameraPreview : AppCompatActivity() {
                     throw RuntimeException("not in allow state")
                 }
             }
-        })
+        }
     }
 
     private fun startCamera() {
-        cameraProviderFuture.addListener(Runnable {
+        cameraProviderFuture.addListener({
             bindCameraUseCase()
         }, ContextCompat.getMainExecutor(this))
     }
@@ -153,15 +156,27 @@ class CameraPreview : AppCompatActivity() {
     // bind usecase
     private fun bindCameraUseCase() {
         if (customSurfaceView != null) binding.container.removeView(customSurfaceView)
+        if (faceRectView != null) binding.drawContainer.removeView(faceRectView)
+
         customSurfaceView = CustomSurfaceView(baseContext)
         customSurfaceView?.layoutParams = ViewGroup.LayoutParams(-1, -1)
         binding.container.addView(customSurfaceView)
+        faceRectView = FaceRectView(baseContext)
+        binding.drawContainer.addView(faceRectView)
+
         val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
             customSurfaceView?.setPreview(it)
+            customSurfaceView?.setImageAnalyzer(imageAnalysis)
         }
+
+        customSurfaceView?.listener = {
+            faceRectView?.updateRect(rect = it)
+        }
+
         val aspectRatio = Rational(9, 16)
         val viewPort =
-            ViewPort.Builder(aspectRatio, Surface.ROTATION_0).setScaleType(ViewPort.FILL_CENTER)
+            ViewPort.Builder(aspectRatio, Surface.ROTATION_0)
+                .setScaleType(ViewPort.FILL_CENTER)
                 .build()
         val useCaseGroup = UseCaseGroup.Builder()
             .setViewPort(viewPort)
