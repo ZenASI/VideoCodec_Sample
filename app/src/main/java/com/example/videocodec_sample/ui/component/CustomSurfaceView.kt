@@ -29,15 +29,16 @@ class CustomSurfaceView(context: Context) : GLSurfaceView(context), GLSurfaceVie
     private var preview: Preview? = null
     private var cameraRender: CameraRender? = null
     private var imageAnalysis: ImageAnalysis? = null
-    private var faceDetectorUtils:FaceDetectorUtils? = null
+    private var faceDetectorUtils: FaceDetectorUtils? = null
 
-    var listener: ((imageRect:Rect) -> Unit)? = null
+    var listener: ((imageRect: Rect) -> Unit)? = null
 
     init {
         cameraRender = CameraRender(context)
         faceDetectorUtils = FaceDetectorUtils(context)
-        faceDetectorUtils?.listener = object : FaceDetectorUtils.OnFaceListener{
+        faceDetectorUtils?.listener = object : FaceDetectorUtils.OnFaceListener {
             override fun faceBounds(x: Float, y: Float, rect: Rect) {
+                Log.d(TAG, "faceBounds: x:${x}, y:${y}, rect:${rect}")
                 listener?.invoke(rect)
             }
         }
@@ -89,7 +90,7 @@ class CustomSurfaceView(context: Context) : GLSurfaceView(context), GLSurfaceVie
 
     override fun analyze(image: ImageProxy) {
         //        val buffer = image.planes[0].buffer
-        Log.d(TAG, "analyze: ${Size(image.width, image.height)}")
+//        Log.d(TAG, "analyze: ${Size(image.width, image.height)}")
 //        listener?.invoke(image)
         faceDetectorUtils?.putImageProxy(image)
 //        image.close()

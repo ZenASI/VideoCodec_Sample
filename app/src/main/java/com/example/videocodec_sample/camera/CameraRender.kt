@@ -53,13 +53,22 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
 
     // def filter
     private var currentFilter = R.raw.original
-    private var viewWidth: Int = 0
-    private var viewHeight: Int = 0
+    private var viewSize = Size(0, 0)
+    private var surfaceSize = Size(0, 0)
+    private var cameraSize = Size(0, 0)
+
+    init {
+        viewSize = Size(
+            context.resources.displayMetrics.widthPixels,
+            context.resources.displayMetrics.heightPixels
+        )
+//        Log.d(TAG, "pixelSize: ${viewSize}")
+    }
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
-        val size = request.resolution
-//        val size = calculateOptimalOutputSize()
-        Log.d(TAG, "onSurfaceRequested: $size")
+//        val size = request.resolution
+        val size = calculateOptimalOutputSize()
+        Log.d(TAG, "setDefaultBufferSize: $size")
         surfaceTexture?.setDefaultBufferSize(size.width, size.height)
         val surface = Surface(surfaceTexture)
         request.provideSurface(surface, executor) {
@@ -100,17 +109,15 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
         ContextCompat.getMainExecutor(context).execute {
             preview?.setSurfaceProvider(this)
         }
-
-//        faceDetector = FaceDetector(context)
-
         Log.d(TAG, "onCreate: ${preview?.attachedSurfaceResolution}")
+        cameraSize = preview?.attachedSurfaceResolution!!
     }
 
     fun onChange(gl: GL10?, width: Int, height: Int) {
-        viewWidth = width
-        viewHeight = height
-        Log.d(TAG, "onChange: ${Size(viewWidth, viewHeight)}")
-        GLES31.glViewport(0, 0, viewWidth, viewHeight)
+        surfaceSize = Size(width, height)
+        Log.d(TAG, "glViewport: ${surfaceSize}")
+//        GLES31.glViewport(0, 0, cameraSize.height, cameraSize.width)
+        GLES31.glViewport(0, 0, surfaceSize.width, surfaceSize.height)
     }
 
     fun onDrawFrame(gk: GL10?) {
@@ -169,7 +176,10 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
                 GLES31.glUniform3fv(
                     iResolutionHandle,
                     1,
-                    BufferUtils.createBuffer(viewHeight.toFloat(), viewWidth.toFloat())
+                    BufferUtils.createBuffer(
+                        surfaceSize.height.toFloat(),
+                        surfaceSize.width.toFloat()
+                    )
                 )
             }
             R.raw.triangles_mosaic -> {

@@ -173,7 +173,7 @@ class CameraPreview : AppCompatActivity() {
             faceRectView?.updateRect(rect = it)
         }
 
-        val aspectRatio = Rational(9, 16)
+        val aspectRatio = Rational(binding.container.height, binding.container.width)
         val viewPort =
             ViewPort.Builder(aspectRatio, Surface.ROTATION_0)
                 .setScaleType(ViewPort.FILL_CENTER)

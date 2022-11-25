@@ -84,8 +84,9 @@ class FaceDetectorUtils(val context: Context) {
     private fun analyzeFaceInfo(faces: List<Face>) {
         for (face in faces) {
             val bounds = face.boundingBox
-//            val rotY = face.headEulerAngleY // Head is rotated to the right rotY degrees
-//            val rotZ = face.headEulerAngleZ // Head is tilted sideways rotZ degrees
+            val rotX = face.headEulerAngleX
+            val rotY = face.headEulerAngleY // Head is rotated to the right rotY degrees
+            val rotZ = face.headEulerAngleZ // Head is tilted sideways rotZ degrees
             Log.d(TAG, "analyzeFaceInfo: ${bounds}")
             listener?.faceBounds(face.headEulerAngleX, face.headEulerAngleY, bounds)
 
