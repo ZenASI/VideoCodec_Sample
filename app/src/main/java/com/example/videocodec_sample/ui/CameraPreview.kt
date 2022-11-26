@@ -10,7 +10,8 @@ import android.util.Log
 import android.util.Rational
 import android.view.Surface
 import android.view.View
-import android.view.ViewGroup
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
@@ -29,8 +30,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- *
- * @see CameraPreview 控制 preview
+ * @see CustomSurfaceView 繪製濾鏡
+ * @see FaceRectView 臉部輪廓追蹤
+ * DEFAULT_FRONT_CAMERA must scale(-1, 1)
+ * DEFAULT_BACK_CAMERA must scale(1, 1)
  */
 @SuppressLint("RestrictedApi")
 class CameraPreview : AppCompatActivity() {
@@ -44,28 +47,33 @@ class CameraPreview : AppCompatActivity() {
 
     private val isDoProcess = MutableLiveData(false)
 
+    var camera: Camera? = null
     private val cameraSelector = MutableLiveData(CameraSelector.DEFAULT_FRONT_CAMERA)
     private val cameraProviderFuture by lazy {
         ProcessCameraProvider.getInstance(baseContext)
     }
-
-    var camera: Camera? = null
     private val cameraProvider by lazy {
         cameraProviderFuture.get()
     }
 
     private val imageCapture by lazy {
-        ImageCapture.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build()
+        ImageCapture.Builder()
+            .setTargetRotation(Surface.ROTATION_0)
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9).build()
     }
 
     private val imageAnalysis by lazy {
         ImageAnalysis.Builder()
+            .setOutputImageRotationEnabled(true)
+            .setTargetRotation(Surface.ROTATION_0)
             .setTargetAspectRatio(AspectRatio.RATIO_16_9)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
     }
 
+    // 繪製濾鏡
     private var customSurfaceView: CustomSurfaceView? = null
+    // 捕捉人臉輪廓
     private var faceRectView: FaceRectView? = null
 
     private val filterAdapter: FilterAdapter by lazy {
@@ -75,7 +83,6 @@ class CameraPreview : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-
         startCamera()
         initListener()
         binding.cameraFilterRV.apply {
@@ -92,9 +99,16 @@ class CameraPreview : AppCompatActivity() {
     private fun initListener() {
         isDoProcess.observe(this) {
             if (it) {
-                binding.progressBar.visibility = View.VISIBLE
+                binding.progressBar.visibility = VISIBLE
             } else {
-                binding.progressBar.visibility = View.GONE
+                binding.progressBar.visibility = GONE
+            }
+        }
+        binding.recordSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+
+            } else {
+
             }
         }
     }
@@ -148,6 +162,8 @@ class CameraPreview : AppCompatActivity() {
     }
 
     private fun startCamera() {
+        // def scale -1f
+        binding.drawContainer.scaleX = -1f
         cameraProviderFuture.addListener({
             bindCameraUseCase()
         }, ContextCompat.getMainExecutor(this))
@@ -159,19 +175,14 @@ class CameraPreview : AppCompatActivity() {
         if (faceRectView != null) binding.drawContainer.removeView(faceRectView)
 
         customSurfaceView = CustomSurfaceView(baseContext)
-        customSurfaceView?.layoutParams = ViewGroup.LayoutParams(-1, -1)
         binding.container.addView(customSurfaceView)
-        faceRectView = FaceRectView(baseContext)
-        binding.drawContainer.addView(faceRectView)
-
         val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
             customSurfaceView?.setPreview(it)
-            customSurfaceView?.setImageAnalyzer(imageAnalysis)
         }
 
-        customSurfaceView?.listener = {
-            faceRectView?.updateRect(rect = it)
-        }
+        faceRectView = FaceRectView(baseContext)
+        faceRectView?.setImageAnalysis(imageAnalysis)
+        binding.drawContainer.addView(faceRectView)
 
         val aspectRatio = Rational(binding.container.height, binding.container.width)
         val viewPort =
@@ -239,8 +250,10 @@ class CameraPreview : AppCompatActivity() {
             R.id.cameraSwitch -> {
                 if (cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
                     cameraSelector.value = CameraSelector.DEFAULT_FRONT_CAMERA
+                    binding.drawContainer.scaleX = -1f
                 } else {
                     cameraSelector.value = CameraSelector.DEFAULT_BACK_CAMERA
+                    binding.drawContainer.scaleX = 1f
                 }
                 bindCameraUseCase()
             }

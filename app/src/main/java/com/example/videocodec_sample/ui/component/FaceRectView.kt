@@ -5,20 +5,50 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.util.Log
+import android.util.Size
 import android.view.View
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.core.content.ContextCompat
+import com.example.videocodec_sample.utils.face.FaceDetectorUtils
+import com.google.mlkit.vision.face.Face
 import java.util.*
+import kotlin.math.log
+import kotlin.math.roundToInt
 
-class FaceRectView(context: Context) : View(context) {
+class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
+    private val TAG = this::class.java.simpleName
 
+    private val paint = Paint().apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 10f
+    }
+    private var mRect = Rect(0, 0, 0, 0)
+    private val random = Random()
 
-    val paint = Paint()
-    var mRect = Rect(0, 0, 0, 0)
-    val rnd = Random()
+    private var viewSize = Size(0, 0)
+    private var widthRatio = 0f
+    private var heightRatio = 0f
+
+    private var imageAnalysis: ImageAnalysis? = null
+    private var faceDetectorUtils: FaceDetectorUtils? = null
+
     init {
+        // init FaceDetectorUtils
+        faceDetectorUtils = FaceDetectorUtils(context)
+        faceDetectorUtils?.listener = object : FaceDetectorUtils.OnFaceListener {
+            override fun faceInfos(face: Face) {
+                updateRect(face = face)
+            }
+        }
+    }
 
-        paint.color = Color.RED
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 10f
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        viewSize = Size(w, h)
+        Log.d(TAG, "onSizeChanged: ${viewSize}")
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -26,9 +56,34 @@ class FaceRectView(context: Context) : View(context) {
         canvas?.drawRect(mRect, paint)
     }
 
-    fun updateRect(rect: Rect) {
-        paint.setARGB(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-        mRect.set(rect)
+    fun updateRect(face: Face) {
+        if (widthRatio == 0f || heightRatio == 0f) return
+        paint.setARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256));
+//        Log.d(TAG, "updateRect: ${face.headEulerAngleX}, ${}")
+        face.boundingBox.apply {
+            mRect.set(
+                (left * widthRatio).roundToInt(),
+                (top * heightRatio).roundToInt(),
+                (right * widthRatio).roundToInt(),
+                (bottom * heightRatio).roundToInt()
+            )
+        }
         invalidate()
+    }
+
+    fun setImageAnalysis(imageAnalysis: ImageAnalysis) {
+        this.imageAnalysis = imageAnalysis
+        this.imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(context), this)
+    }
+
+    override fun analyze(imageProxy: ImageProxy) {
+        if (viewSize.width == 0 || viewSize.height == 0) return
+        widthRatio =
+            if (viewSize.width > imageProxy.width) viewSize.width.toFloat() / imageProxy.width else imageProxy.width.toFloat() / viewSize.width
+        heightRatio =
+            if (viewSize.height > imageProxy.height) viewSize.height.toFloat() / imageProxy.height else imageProxy.height.toFloat() / viewSize.height
+
+        Log.d(TAG, "analyze: widthRatio:${widthRatio}, heightRatio:${heightRatio}")
+        faceDetectorUtils?.putImageProxy(imageProxy)
     }
 }

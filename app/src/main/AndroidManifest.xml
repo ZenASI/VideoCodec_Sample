@@ -31,7 +31,7 @@
             </intent-filter>
         </activity>
         <activity android:name="com.example.videocodec_sample.ui.CameraPreview"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity android:name="com.example.videocodec_sample.ui.AACRecord" />
         <activity android:name="com.example.videocodec_sample.ui.VideoDecode" />
         <activity android:name="com.example.videocodec_sample.ui.VideoEncode" />

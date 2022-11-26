@@ -62,12 +62,11 @@ class CameraRender(val context: Context) : Preview.SurfaceProvider,
             context.resources.displayMetrics.widthPixels,
             context.resources.displayMetrics.heightPixels
         )
-//        Log.d(TAG, "pixelSize: ${viewSize}")
     }
 
     override fun onSurfaceRequested(request: SurfaceRequest) {
-//        val size = request.resolution
-        val size = calculateOptimalOutputSize()
+        val size = request.resolution
+//        val size = calculateOptimalOutputSize()
         Log.d(TAG, "setDefaultBufferSize: $size")
         surfaceTexture?.setDefaultBufferSize(size.width, size.height)
         val surface = Surface(surfaceTexture)
