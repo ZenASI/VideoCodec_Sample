@@ -5,16 +5,17 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.util.Log
 import android.util.Size
 import android.view.View
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.core.content.ContextCompat
+import com.example.videocodec_sample.R
 import com.example.videocodec_sample.utils.face.FaceDetectorUtils
 import com.google.mlkit.vision.face.Face
 import java.util.*
-import kotlin.math.log
 import kotlin.math.roundToInt
 
 class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
@@ -35,6 +36,8 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
     private var imageAnalysis: ImageAnalysis? = null
     private var faceDetectorUtils: FaceDetectorUtils? = null
 
+    private var drawable: Drawable? = null
+
     init {
         // init FaceDetectorUtils
         faceDetectorUtils = FaceDetectorUtils(context)
@@ -43,6 +46,7 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
                 updateRect(face = face)
             }
         }
+        drawable = ContextCompat.getDrawable(context, R.drawable.shark)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -54,12 +58,18 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         canvas?.drawRect(mRect, paint)
+        drawable?.let { d ->
+            d.setBounds(mRect.left, mRect.top, mRect.right, mRect.bottom)
+            canvas?.let { c->
+                d.draw(c)
+            }
+        }
     }
 
     fun updateRect(face: Face) {
         if (widthRatio == 0f || heightRatio == 0f) return
         paint.setARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256));
-//        Log.d(TAG, "updateRect: ${face.headEulerAngleX}, ${}")
+        Log.d(TAG, "AngleX: ${face.headEulerAngleX}, AngleY: ${face.headEulerAngleY}, AngleZ: ${face.headEulerAngleZ}")
         face.boundingBox.apply {
             mRect.set(
                 (left * widthRatio).roundToInt(),
@@ -83,7 +93,7 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
         heightRatio =
             if (viewSize.height > imageProxy.height) viewSize.height.toFloat() / imageProxy.height else imageProxy.height.toFloat() / viewSize.height
 
-        Log.d(TAG, "analyze: widthRatio:${widthRatio}, heightRatio:${heightRatio}")
+//        Log.d(TAG, "analyze: widthRatio:${widthRatio}, heightRatio:${heightRatio}")
         faceDetectorUtils?.putImageProxy(imageProxy)
     }
 }
