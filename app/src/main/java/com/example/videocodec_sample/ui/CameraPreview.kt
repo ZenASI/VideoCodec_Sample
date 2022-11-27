@@ -32,8 +32,8 @@ import java.util.*
 /**
  * @see CustomSurfaceView 繪製濾鏡
  * @see FaceRectView 臉部輪廓追蹤
- * DEFAULT_FRONT_CAMERA must scale(-1, 1)
- * DEFAULT_BACK_CAMERA must scale(1, 1)
+ * DEFAULT_FRONT_CAMERA scale(-1, 1)
+ * DEFAULT_BACK_CAMERA scale(1, 1)
  */
 @SuppressLint("RestrictedApi")
 class CameraPreview : AppCompatActivity() {
@@ -163,7 +163,7 @@ class CameraPreview : AppCompatActivity() {
 
     private fun startCamera() {
         // def scale -1f
-        binding.drawContainer.scaleX = -1f
+//        binding.drawContainer.scaleX = -1f
         cameraProviderFuture.addListener({
             bindCameraUseCase()
         }, ContextCompat.getMainExecutor(this))
@@ -182,6 +182,7 @@ class CameraPreview : AppCompatActivity() {
 
         faceRectView = FaceRectView(baseContext)
         faceRectView?.setImageAnalysis(imageAnalysis)
+        faceRectView?.setCameraSelector(cameraSelector.value!!)
         binding.drawContainer.addView(faceRectView)
 
         val aspectRatio = Rational(binding.container.height, binding.container.width)
@@ -250,10 +251,10 @@ class CameraPreview : AppCompatActivity() {
             R.id.cameraSwitch -> {
                 if (cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
                     cameraSelector.value = CameraSelector.DEFAULT_FRONT_CAMERA
-                    binding.drawContainer.scaleX = -1f
+//                    binding.drawContainer.scaleX = -1f
                 } else {
                     cameraSelector.value = CameraSelector.DEFAULT_BACK_CAMERA
-                    binding.drawContainer.scaleX = 1f
+//                    binding.drawContainer.scaleX = 1f
                 }
                 bindCameraUseCase()
             }

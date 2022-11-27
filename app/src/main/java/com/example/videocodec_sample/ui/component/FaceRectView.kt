@@ -3,21 +3,26 @@ package com.example.videocodec_sample.ui.component
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.Log
 import android.util.Size
 import android.view.View
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.withScale
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.utils.face.FaceDetectorUtils
 import com.google.mlkit.vision.face.Face
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
+// TODO: 如換成後置鏡頭需要清除畫布
 class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
     private val TAG = this::class.java.simpleName
 
@@ -25,6 +30,11 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
         color = Color.RED
         style = Paint.Style.STROKE
         strokeWidth = 10f
+    }
+    private val textPaint = Paint().apply {
+        color = Color.RED
+        style = Paint.Style.FILL
+        textSize = 100f
     }
     private var mRect = Rect(0, 0, 0, 0)
     private val random = Random()
@@ -37,6 +47,7 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
     private var faceDetectorUtils: FaceDetectorUtils? = null
 
     private var drawable: Drawable? = null
+    private var need2Flip = true
 
     init {
         // init FaceDetectorUtils
@@ -57,24 +68,29 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        canvas?.drawRect(mRect, paint)
-        drawable?.let { d ->
-            d.setBounds(mRect.left, mRect.top, mRect.right, mRect.bottom)
-            canvas?.let { c->
+        canvas?.let { c ->
+            c.drawRect(mRect, paint)
+            drawable?.let { d ->
+                d.setBounds(mRect.left, mRect.top, mRect.right, mRect.bottom)
                 d.draw(c)
             }
+            c.drawText("sharrk!!", mRect.left.toFloat(), mRect.top.toFloat(), textPaint)
         }
     }
 
     fun updateRect(face: Face) {
         if (widthRatio == 0f || heightRatio == 0f) return
-        paint.setARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256));
-        Log.d(TAG, "AngleX: ${face.headEulerAngleX}, AngleY: ${face.headEulerAngleY}, AngleZ: ${face.headEulerAngleZ}")
+        textPaint.setARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256))
+        paint.setARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256))
+//        Log.d(
+//            TAG,
+//            "AngleX: ${face.headEulerAngleX}, AngleY: ${face.headEulerAngleY}, AngleZ: ${face.headEulerAngleZ}"
+//        )
         face.boundingBox.apply {
             mRect.set(
-                (left * widthRatio).roundToInt(),
+                viewSize.width - (right * widthRatio).roundToInt(),
                 (top * heightRatio).roundToInt(),
-                (right * widthRatio).roundToInt(),
+                viewSize.width - (left * widthRatio).roundToInt(),
                 (bottom * heightRatio).roundToInt()
             )
         }
@@ -84,6 +100,10 @@ class FaceRectView(context: Context) : View(context), ImageAnalysis.Analyzer {
     fun setImageAnalysis(imageAnalysis: ImageAnalysis) {
         this.imageAnalysis = imageAnalysis
         this.imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(context), this)
+    }
+
+    fun setCameraSelector(value: CameraSelector) {
+        need2Flip = value == CameraSelector.DEFAULT_FRONT_CAMERA
     }
 
     override fun analyze(imageProxy: ImageProxy) {
