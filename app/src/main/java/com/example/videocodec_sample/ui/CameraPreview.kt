@@ -36,7 +36,7 @@ import java.util.*
  * DEFAULT_BACK_CAMERA scale(1, 1)
  */
 @SuppressLint("RestrictedApi")
-class CameraPreview : AppCompatActivity() {
+class CameraPreview : BaseActivity() {
 
     val TAG = this::class.java.simpleName
     val binding by lazy {
@@ -121,15 +121,6 @@ class CameraPreview : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         customSurfaceView?.onResume()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-            window.insetsController?.hide(WindowInsets.Type.navigationBars())
-        } else {
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
     }
 
     private fun removeCameraStateObservers(cameraInfo: CameraInfo) {

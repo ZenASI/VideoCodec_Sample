@@ -1,9 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".ui.AACRecord">
+<layout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".ui.AACRecord"
+        android:background="@color/black">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/sharkIcon"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/shark"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/guideline_v025"/>
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline_v025"
+            android:layout_width="wrap_content"
+            android:layout_height="1dp"
+            app:layout_constraintGuide_percent=".25"
+            android:orientation="horizontal"/>
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/recordTimeText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingVertical="10dp"
+            android:text="00:00"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            app:layout_constraintTop_toTopOf="@id/guideline_v025"
+            app:layout_constraintBottom_toBottomOf="@id/guideline_v025"/>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/recordStartBtn"
+                android:onClick="onClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="start" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/recordStopBtn"
+                android:onClick="onClick"
+                android:enabled="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="stop" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/recordPlayBtn"
+                android:onClick="onClick"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="play" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
