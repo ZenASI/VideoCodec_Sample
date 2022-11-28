@@ -14,11 +14,12 @@ import android.os.Environment
 import android.util.Log
 import android.view.View
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.databinding.ActivityAacrecordBinding
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.internal.synchronized
 import java.io.*
-import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -52,12 +53,15 @@ class AACRecord : BaseActivity() {
             AudioManager.AUDIO_SESSION_ID_GENERATE
         )
     }
+    private lateinit var playBuffer: ByteArray
 
     private lateinit var audioRecord: AudioRecord
     private lateinit var recordBuffer: ByteArray
     private lateinit var ouput: FileOutputStream
     private lateinit var input: FileInputStream
+
     private var recordThread: Thread? = null
+    private var playThread: Thread? = null
 
     private val rotationThread by lazy {
         Executors.newScheduledThreadPool(1)
@@ -65,12 +69,34 @@ class AACRecord : BaseActivity() {
 
     // state
     private var isRecording = false
+    private var isPlaying = false
+
+    private val executor by lazy {
+        ContextCompat.getMainExecutor(baseContext)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         initRecord()
+        initTrack()
         initRotation()
+        initListener()
+    }
+
+    private fun initListener() {
+
+    }
+
+    private fun initTrack() {
+        // init bufferSize
+        playBuffer = ByteArray(
+            AudioTrack.getMinBufferSize(
+                44100,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+        )
     }
 
     private fun initRotation() {
@@ -107,7 +133,7 @@ class AACRecord : BaseActivity() {
                 AudioFormat.ENCODING_PCM_16BIT
             )
         )
-        // 2被buffer
+        // recordBuffer
         recordBuffer = ByteArray(
             AudioRecord.getMinBufferSize(
                 44100,
@@ -166,6 +192,7 @@ class AACRecord : BaseActivity() {
                 Log.d(TAG, "onClick: recordStartBtn")
                 binding.recordStartBtn.isEnabled = false
                 binding.recordStopBtn.isEnabled = true
+                binding.recordPlayBtn.isEnabled = false
                 startRecord()
             }
             R.id.recordStopBtn -> {
@@ -173,8 +200,13 @@ class AACRecord : BaseActivity() {
                 stopRecord()
                 binding.recordStartBtn.isEnabled = true
                 binding.recordStopBtn.isEnabled = false
+                binding.recordPlayBtn.isEnabled = true
             }
             R.id.recordPlayBtn -> {
+                Log.d(TAG, "onClick: recordPlayBtn")
+                binding.recordStartBtn.isEnabled = false
+                binding.recordStopBtn.isEnabled = false
+                binding.recordPlayBtn.isEnabled = false
                 playPcmFile()
             }
             else -> {
@@ -184,7 +216,38 @@ class AACRecord : BaseActivity() {
     }
 
     private fun playPcmFile() {
-
+        val file = File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), PCM_NAME)
+        playThread = Thread {
+            try {
+                // change play state
+                audioTrack.play()
+                isPlaying = true
+                // prepare fis
+                input = FileInputStream(file)
+                // play loop
+                while (input.available() > 0) {
+                    val readCount: Int = input.read(playBuffer)
+                    if (readCount == AudioTrack.ERROR_INVALID_OPERATION ||
+                        readCount == AudioTrack.ERROR_BAD_VALUE
+                    ) {
+                        continue
+                    }
+                    if (readCount != 0 && readCount != -1 && isPlaying) {
+                        Log.d(TAG, "playPcmFile: call")
+                        audioTrack.write(playBuffer, 0, readCount)
+                    }
+                }
+                stopPlay()
+                executor.execute {
+                    Log.d(TAG, "playPcmFile: finish")
+                    binding.recordStartBtn.isEnabled = true
+                    binding.recordPlayBtn.isEnabled = true
+                }
+            } catch (exp: Exception) {
+                Log.e(TAG, "playPcmFile: ", exp)
+            }
+        }
+        playThread?.start()
     }
 
     private fun stopRecord() {
@@ -193,14 +256,26 @@ class AACRecord : BaseActivity() {
         audioRecord?.stop()
     }
 
+    private fun stopPlay() {
+        Log.d(TAG, "stopPlay: call")
+        isPlaying = false
+        audioTrack?.stop()
+    }
+
     override fun onStop() {
-        if (isRecording) stopRecord()
+        try {
+            if (isRecording) stopRecord()
+            if (isPlaying) stopPlay()
+        } catch (e: Exception) {
+            Log.e(TAG, "onStop: ", e)
+        }
         super.onStop()
     }
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: audioRecord release")
         audioRecord?.release()
+        audioTrack?.release()
         super.onDestroy()
     }
 }
