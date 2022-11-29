@@ -1,12 +1,12 @@
 package com.example.videocodec_sample.ui
 
 import android.media.MediaExtractor
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
-import androidx.lifecycle.lifecycleScope
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.databinding.ActivityVideoDecodeBinding
 import com.example.videocodec_sample.model.video.VideoItem
@@ -22,6 +22,7 @@ import java.io.IOException
 class VideoDecode : BaseActivity(), SurfaceHolder.Callback {
     private val TAG = this::class.java.simpleName
 
+    private val videopath ="android.resource://" + packageName+ "/" + R.raw.tears_of_steel_1080p
     private var videoJson = ""
     private var videoList = mutableListOf<VideoItem>()
     private var isJsonLoadFinish = false
@@ -51,8 +52,8 @@ class VideoDecode : BaseActivity(), SurfaceHolder.Callback {
         Log.d(TAG, ": ${VideoItemJsonAdapter(moshi).toJson(item)}")
         try {
             val extractorThread = Thread{
-//                mediaExtractor.setDataSource()
-//                Log.d(TAG, ": ${mediaExtractor.trackCount}")
+                mediaExtractor.setDataSource(baseContext, Uri.parse(videopath), null)
+                Log.d(TAG, ": ${mediaExtractor.trackCount}")
             }
             extractorThread.start()
         } catch (exp: IOException) {
