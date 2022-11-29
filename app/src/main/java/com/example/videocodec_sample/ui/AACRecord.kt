@@ -1,7 +1,6 @@
 package com.example.videocodec_sample.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFormat
@@ -17,8 +16,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.databinding.ActivityAacrecordBinding
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.internal.synchronized
+import com.example.videocodec_sample.ui.base.BaseActivity
 import java.io.*
 import java.util.*
 import java.util.concurrent.Executors

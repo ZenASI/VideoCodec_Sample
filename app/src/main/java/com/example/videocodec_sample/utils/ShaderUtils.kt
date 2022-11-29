@@ -5,6 +5,7 @@ import android.opengl.GLES20
 import android.opengl.GLException
 import android.util.Log
 import androidx.annotation.RawRes
+import com.example.videocodec_sample.utils.ext.getRawString
 
 internal object ShaderUtils {
     fun buildProgram(context: Context, @RawRes vertexSourceRawId: Int, @RawRes fragmentSourceRawId: Int): Int =

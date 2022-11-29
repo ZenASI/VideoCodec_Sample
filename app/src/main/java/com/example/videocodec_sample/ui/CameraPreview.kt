@@ -2,8 +2,6 @@ package com.example.videocodec_sample.ui
 
 import android.annotation.SuppressLint
 import android.content.ContentValues
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -12,8 +10,6 @@ import android.view.Surface
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.view.WindowInsets
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -23,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.videocodec_sample.R
 import com.example.videocodec_sample.adapter.FilterAdapter
 import com.example.videocodec_sample.databinding.ActivityCameraPreviewBinding
+import com.example.videocodec_sample.ui.base.BaseActivity
 import com.example.videocodec_sample.ui.component.CustomSurfaceView
 import com.example.videocodec_sample.ui.component.FaceRectView
 import com.example.videocodec_sample.utils.FilterUtils

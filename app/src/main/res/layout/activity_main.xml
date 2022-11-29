@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
             android:paddingVertical="10dp"
-            android:text="VideoCodecSample"
+            android:text="VideoDecodeSample"
             android:textAllCaps="false"
             android:onClick="onClick"/>
 
